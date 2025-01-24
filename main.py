@@ -62,18 +62,22 @@ def send_command_to_esp(command):
 
 
 def main():
+    print("Waiting for prompts from ESP32...")
     while True:
-        prompt = input("Enter your command (or 'exit' to quit): ")
-        if prompt.lower() == "exit":
-            print("Exiting...")
-            break
+        try:
+            if ser.in_waiting > 0:
+                prompt = ser.readline().decode().strip()
+                print(f"Received prompt from ESP: {prompt}")
 
-        ai_command = get_ai_command(prompt)
-        if ai_command:
-            print(f"AI decided: {ai_command}")
-            send_command_to_esp(ai_command)
-        else:
-            print("AI could not generate a valid command.")
+                # Get AI decision based on the received prompt
+                ai_command = get_ai_command(prompt)
+                if ai_command:
+                    print(f"AI decided: {ai_command}")
+                    send_command_to_esp(ai_command)  # Send response back to ESP
+                else:
+                    print("AI could not generate a valid command.")
+        except Exception as e:
+            print(f"Error reading from serial: {e}")
 
 
 if __name__ == "__main__":
