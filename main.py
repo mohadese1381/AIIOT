@@ -8,8 +8,8 @@ llm = ChatOpenAI(model="gpt-4o-mini",
 prompt = "The room is too dark; I need more light"
 
 # Serial communication setup
-SERIAL_PORT = "COM3"
-BAUD_RATE = 9600
+SERIAL_PORT = "COM7"
+BAUD_RATE = 115200
 
 try:
     ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
@@ -27,13 +27,13 @@ def get_ai_command(prompt):
             "content": """You are an assistant for an IoT system that
             controls LED lights. Based on the user's prompt, you must decide which
             function to call for controlling the lights.
-            - If the input is related to the room, you must decide whether to turn on or off the light on pin 4.
-            - If the input is related to the kitchen, you must decide whether to turn on or off the light on pin 33.
+            - If the input is related to the room, you must decide whether to turn on or off the light on room led.
+            - If the input is related to the kitchen, you must decide whether to turn on or off the light on kitchen led.
             The function options are:
-              - 4ON: Turn ON the light on pin 4 (room).
-              - 4OFF: Turn OFF the light on pin 4 (room).
-              - 33ON: Turn ON the light on pin 33 (kitchen).
-              - 33OFF: Turn OFF the light on pin 33 (kitchen).
+              - roomON: Turn ON the light (room).
+              - roomOFF: Turn OFF the light  (room).
+              - kitchenON: Blink the light   (kitchen).
+              - kitchenOFF: Turn OFF the light (kitchen).
 
             You must only respond with a single word (33ON, 33OFF, 4ON, 4OFF)
             corresponding to the function. DO NOT add any other information or
