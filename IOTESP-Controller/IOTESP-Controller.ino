@@ -4,14 +4,17 @@ const char* ssid = "ESP8266-Access-Point";
 const char* password = "123456789";
 
 WiFiServer server(8888); // Define the server to listen on port 8888
-const int ledPin = LED_BUILTIN; // Define LED pin (on-board LED)
+const int ledPin = LED_BUILTIN;
+
+String clientData = "";  // Variable to store the received data from the client
+bool isBlinking = false; // Flag to check if the LED is blinking
 
 void setup() {
   Serial.begin(115200);
   delay(10);
 
   pinMode(ledPin, OUTPUT);
-
+  digitalWrite(ledPin, HIGH);
   Serial.println("Setting up Access Point...");
   WiFi.softAP(ssid, password);  
   server.begin(); // Start the server
@@ -26,32 +29,45 @@ void loop() {
   if (client) {
     Serial.println("New Client Connected");
 
-    String clientData = "";  // Variable to store the received data from the client
-    while (client.connected()) { // While the client is connected
+    while (client.connected()) {
+        
+      // Read the data from the client
       while (client.available()) { // If data is available from the client
-        clientData = Serial.readStringUntil('\n');        // Append the character to clientData
+        char c = client.read();  // Read one character
+        clientData += c;         // Append the character to clientData
       }
 
       // If we have received some data
       if (clientData.length() > 0) {
-        Serial.print("Received data: ");
+        Serial.print("Prompt: ");
         Serial.println(clientData);  // Print the received data
+               
+        delay(2000);  // Slight delay to handle commands properly
 
-        // Handle different commands based on the exact received character
-        if (clientData == "A") {
-          digitalWrite(ledPin, LOW);  // Turn off the LED
-        }
-        if (clientData == "B") {
-          digitalWrite(ledPin, HIGH); // Turn on the LED
-        }
-        if (clientData == "C") {
-          digitalWrite(ledPin, HIGH); // Blink the LED
-          delay(500);
-          digitalWrite(ledPin, LOW);
-          delay(500);
-        }
-        if (clientData == "D") {
-          digitalWrite(ledPin, HIGH); // Turn on the LED
+        // If serial input is available, read the command
+        if (Serial.available()) {
+          String promptResponse = Serial.readStringUntil('\n'); // Read the input
+          Serial.print("Received: ");
+          Serial.println(promptResponse);
+
+          if (promptResponse == "roomON") {
+            isBlinking = false;  // Stop blinking if any command is received
+            digitalWrite(ledPin, LOW);  // Turn on the LED (room)
+          }
+          else if (promptResponse == "roomOFF") {
+            isBlinking = false;  // Stop blinking if any command is received
+            digitalWrite(ledPin, HIGH); // Turn off the LED (room)
+          }
+          else if (promptResponse == "kitchenOFF") {
+            isBlinking = false;  // Stop blinking if any command is received
+            digitalWrite(ledPin, HIGH); // Turn off the LED (kitchen)
+          }
+          else if (promptResponse == "kitchenON") {
+            isBlinking = true;  // Start blinking the LED (kitchen)
+          }
+          else {
+            Serial.println("Wrong input");
+          }
         }
 
         // Send a response back to the client
@@ -59,7 +75,30 @@ void loop() {
         client.print(clientData); // Echo back the received data
 
         clientData = "";  // Reset the clientData string for the next input
-        break;  // Exit the loop once the data is processed
+      }
+
+      // Blinking logic for kitchenON command (interruptible)
+      if (isBlinking) {
+        unsigned long currentMillis = millis();
+        static unsigned long previousMillis = 0;
+        const long interval = 500;
+
+        if (currentMillis - previousMillis >= interval) {
+          // Save the last time you blinked the LED
+          previousMillis = currentMillis;
+          
+          // Blink the LED
+          digitalWrite(ledPin, !digitalRead(ledPin)); // Toggle the LED state
+        }
+      } 
+      else {
+        // If not blinking, keep the LED in the desired state (on/off)
+        // For example, after turning on the kitchen, stop blinking:
+        if (digitalRead(ledPin) == LOW && !isBlinking) {
+          digitalWrite(ledPin, LOW);  // Ensure LED is on
+        } else if (digitalRead(ledPin) == HIGH && !isBlinking) {
+          digitalWrite(ledPin, HIGH);  // Ensure LED is off
+        }
       }
     }
   }
