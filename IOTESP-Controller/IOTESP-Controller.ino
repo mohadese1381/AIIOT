@@ -4,19 +4,22 @@ const char* ssid = "ESP8266-Access-Point";
 const char* password = "123456789";
 
 WiFiServer server(8888); // Define the server to listen on port 8888
-const int ledPin = LED_BUILTIN;
+const int ledPin = LED_BUILTIN; // Built-in LED pin for status
 
 String clientData = "";  // Variable to store the received data from the client
 bool isBlinking = false; // Flag to check if the LED is blinking
+unsigned long previousMillis = 0; // Timer for blinking
+const long blinkInterval = 500; // Blinking interval in milliseconds
 
 void setup() {
   Serial.begin(115200);
   delay(10);
 
   pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, HIGH);
+  digitalWrite(ledPin, HIGH); // Turn off LED initially (active LOW)
+  
   Serial.println("Setting up Access Point...");
-  WiFi.softAP(ssid, password);  
+  WiFi.softAP(ssid, password);
   server.begin(); // Start the server
 
   Serial.println("Server started");
@@ -26,82 +29,72 @@ void setup() {
 
 void loop() {
   WiFiClient client = server.available(); // Check if there's a client connected
+
   if (client) {
     Serial.println("New Client Connected");
+    client.setTimeout(2000); // Set timeout for client communication
 
     while (client.connected()) {
-        
-      // Read the data from the client
-      while (client.available()) { // If data is available from the client
-        char c = client.read();  // Read one character
-        clientData += c;         // Append the character to clientData
+      while (client.available()) {
+        char c = client.read(); // Read one character at a time
+        clientData += c;        // Append the character to clientData
       }
 
-      // If we have received some data
+      // Process the received data
       if (clientData.length() > 0) {
-        Serial.print("Prompt: ");
-        Serial.println(clientData);  // Print the received data
-               
-        delay(2000);  // Slight delay to handle commands properly
+        Serial.print("Received Prompt from Client: ");
+        Serial.println(clientData);
 
-        // If serial input is available, read the command
-        if (Serial.available()) {
-          String promptResponse = Serial.readStringUntil('\n'); // Read the input
-          Serial.print("Received: ");
-          Serial.println(promptResponse);
-
-          if (promptResponse == "roomON") {
-            isBlinking = false;  // Stop blinking if any command is received
-            digitalWrite(ledPin, LOW);  // Turn on the LED (room)
-          }
-          else if (promptResponse == "roomOFF") {
-            isBlinking = false;  // Stop blinking if any command is received
-            digitalWrite(ledPin, HIGH); // Turn off the LED (room)
-          }
-          else if (promptResponse == "kitchenOFF") {
-            isBlinking = false;  // Stop blinking if any command is received
-            digitalWrite(ledPin, HIGH); // Turn off the LED (kitchen)
-          }
-          else if (promptResponse == "kitchenON") {
-            isBlinking = true;  // Start blinking the LED (kitchen)
-          }
-          else {
-            Serial.println("Wrong input");
-          }
-        }
-
-        // Send a response back to the client
-        client.print("Message received: ");
-        client.print(clientData); // Echo back the received data
-
-        clientData = "";  // Reset the clientData string for the next input
+        // Send prompt to the serial port for the Python script
+        Serial.println("Prompt:" + clientData); // Send to Python
+        clientData = ""; // Reset clientData for next input
       }
 
-      // Blinking logic for kitchenON command (interruptible)
-      if (isBlinking) {
-        unsigned long currentMillis = millis();
-        static unsigned long previousMillis = 0;
-        const long interval = 500;
+      // Check for a command from the Python script
+      if (Serial.available()) {
+        String command = Serial.readStringUntil('\n'); // Read the response
+        command.trim(); // Remove whitespace and newline characters
+        Serial.print("Command from Python: ");
+        Serial.println(command);
 
-        if (currentMillis - previousMillis >= interval) {
-          // Save the last time you blinked the LED
-          previousMillis = currentMillis;
-          
-          // Blink the LED
-          digitalWrite(ledPin, !digitalRead(ledPin)); // Toggle the LED state
-        }
-      } 
-      else {
-        // If not blinking, keep the LED in the desired state (on/off)
-        // For example, after turning on the kitchen, stop blinking:
-        if (digitalRead(ledPin) == LOW && !isBlinking) {
-          digitalWrite(ledPin, LOW);  // Ensure LED is on
-        } else if (digitalRead(ledPin) == HIGH && !isBlinking) {
-          digitalWrite(ledPin, HIGH);  // Ensure LED is off
-        }
+        // Execute the command
+        executeCommand(command);
+
+        // Send acknowledgment back to the client
+        client.println("Command executed: " + command);
       }
+
+      // Handle blinking if enabled
+      handleBlinking();
+    }
+    client.stop(); // Close the client connection
+    Serial.println("Client Disconnected");
+  }
+}
+
+void executeCommand(String command) {
+  if (command == "roomON") {
+    isBlinking = false;            // Stop blinking
+    digitalWrite(ledPin, LOW);     // Turn on the LED (active LOW)
+  } else if (command == "roomOFF") {
+    isBlinking = false;            // Stop blinking
+    digitalWrite(ledPin, HIGH);    // Turn off the LED
+  } else if (command == "kitchenON") {
+    isBlinking = true;             // Start blinking
+  } else if (command == "kitchenOFF") {
+    isBlinking = false;            // Stop blinking
+    digitalWrite(ledPin, HIGH);    // Turn off the LED
+  } else {
+    Serial.println("Invalid command received: " + command);
+  }
+}
+
+void handleBlinking() {
+  if (isBlinking) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - previousMillis >= blinkInterval) {
+      previousMillis = currentMillis;
+      digitalWrite(ledPin, !digitalRead(ledPin)); // Toggle LED state
     }
   }
-
-  delay(100); // Small delay to avoid excessive CPU usage
 }

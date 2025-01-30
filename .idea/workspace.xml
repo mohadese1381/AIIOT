@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="11c89c28-93f9-4def-9939-2a4b2acccb1a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IOTESP-Controller/IOTESP-Controller.ino" beforeDir="false" afterPath="$PROJECT_DIR$/IOTESP-Controller/IOTESP-Controller.ino" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="11c89c28-93f9-4def-9939-2a4b2acccb1a" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -84,6 +80,7 @@
       <workItem from="1737758390431" duration="659000" />
       <workItem from="1737953718660" duration="6501000" />
       <workItem from="1738004743707" duration="299000" />
+      <workItem from="1738071156638" duration="383000" />
     </task>
     <servers />
   </component>
